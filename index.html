@@ -3,16 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Waveform Braid</title>
+<title>dVine DNA Waveform</title>
 <style>
-  body {
-    margin: 0;
-    background: #000;
-    overflow: hidden;
-  }
-  canvas {
-    display: block;
-  }
+  body { margin: 0; background: black; overflow: hidden; }
+  canvas { display: block; }
 </style>
 </head>
 <body>
@@ -21,54 +15,70 @@
 const canvas = document.getElementById('waveCanvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+window.addEventListener('resize', () => {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
+});
 
-// Define 3 lines with their colors
-const lines = [
-  { color: '#ff3f3f' },
-  { color: '#3fffdd' },
-  { color: '#ffd93f' }
-];
+// Line settings
+const numLines = 3;
+const lines = [];
+const colors = ['#FF4F4F', '#4FFFDE', '#FFD24F']; // distinct colors for each line
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  const t = performance.now() * 0.001;
-
-  lines.forEach((line, i) => {
+class Line {
+  constructor(color, offset) {
+    this.color = color;
+    this.offset = offset;
+    this.angle = 0;
+    this.radius = 100 + offset * 50;
+    this.speed = 0.02 + offset * 0.01;
+  }
+  
+  update(time) {
+    this.angle += this.speed;
+    this.x = canvas.width/2 + Math.cos(this.angle) * this.radius;
+    this.y = canvas.height/2 + Math.sin(this.angle) * this.radius * Math.sin(time * 0.001 + this.offset);
+  }
+  
+  draw() {
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 3;
     ctx.beginPath();
-
-    for (let x = 0; x < canvas.width; x += 10) {
-      const baseY = canvas.height / 2;
-
-      // DNA twist motion
-      const twist = Math.sin(t + i * 2) * 40;       // horizontal offset
-      const wave = Math.sin(x * 0.01 + t * 2 + i) * 30; // vertical wobble
-
-      const offsetX = Math.sin(t + i) * 50; // circular orbit
-      const offsetY = Math.cos(t + i) * 25;
-
-      const y = baseY + wave + offsetY;
-      const finalX = x + offsetX + twist;
-
-      if (x === 0) ctx.moveTo(finalX, y);
-      else ctx.lineTo(finalX, y);
-    }
-
-    ctx.strokeStyle = line.color;
-    ctx.lineWidth = 2;
+    ctx.moveTo(this.prevX, this.prevY);
+    ctx.lineTo(this.x, this.y);
     ctx.stroke();
-  });
+    this.prevX = this.x;
+    this.prevY = this.y;
+  }
+}
 
+for (let i = 0; i < numLines; i++) {
+  lines.push(new Line(colors[i], i));
+}
+
+// Initialize previous positions
+lines.forEach(line => {
+  line.prevX = canvas.width/2;
+  line.prevY = canvas.height/2;
+});
+
+function animate(time) {
+  // Fade trails
+  ctx.fillStyle = 'rgba(0,0,0,0.1)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  
+  lines.forEach(line => {
+    line.update(time);
+    line.draw();
+  });
+  
   requestAnimationFrame(animate);
 }
 
-animate();
+animate(0);
 </script>
 </body>
 </html>

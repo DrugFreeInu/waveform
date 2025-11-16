@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Divine Waveform</title>
+<title>Ocean DNA Waveform</title>
 <style>
-  body { margin: 0; background: #0a0a0a; overflow: hidden; }
+  body { margin: 0; background: #000; overflow: hidden; }
   canvas { display: block; }
 </style>
 </head>
@@ -15,70 +15,66 @@
 const canvas = document.getElementById('waveCanvas');
 const ctx = canvas.getContext('2d');
 
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
-
-window.addEventListener('resize', () => {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-});
-
-// Line class representing each flowing wave line
-class WaveLine {
-  constructor(color, speed, phase, amplitude) {
-    this.color = color;
-    this.speed = speed;
-    this.phase = phase;
-    this.amplitude = amplitude;
-    this.points = [];
-    this.maxPoints = 150;
-  }
-
-  update(time) {
-    const freq = 0.02;
-    const waveLength = width / 4;
-    const newY = height / 2 + Math.sin(time * this.speed + this.phase) * this.amplitude;
-    this.points.push({x: time % width, y: newY});
-    if (this.points.length > this.maxPoints) this.points.shift();
-  }
-
-  draw(ctx) {
-    ctx.beginPath();
-    for (let i = 0; i < this.points.length; i++) {
-      const p = this.points[i];
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    }
-    const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, this.color + 'AA');
-    gradient.addColorStop(1, this.color + '11');
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  }
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
-// Create multiple flowing wave lines
+// Lines config
 const lines = [
-  new WaveLine('#ff4d4d', 0.02, 0, 100),
-  new WaveLine('#4d94ff', 0.018, Math.PI / 2, 120),
-  new WaveLine('#4dff88', 0.015, Math.PI, 80),
-  new WaveLine('#ffdb4d', 0.022, Math.PI/1.5, 110)
+  { color: '#ff3f3f', phase: 0 },
+  { color: '#3fffdd', phase: Math.PI / 2 },
+  { color: '#ffd93f', phase: Math.PI }
 ];
+
+// Wave settings
+const waveAmplitude = 50;
+const waveLength = 0.008; // horizontal frequency
+const crashAmplitude = 60; // height of wave crest
+const crashSpeed = 0.03; // how fast wave crashes
+const trailAlpha = 0.1; // trail opacity
 
 let time = 0;
 
 function animate() {
   requestAnimationFrame(animate);
-  ctx.fillStyle = 'rgba(10,10,10,0.1)';
-  ctx.fillRect(0, 0, width, height);
+  time += 1;
 
-  time += 2;
+  // Fade canvas slightly to create trailing effect
+  ctx.fillStyle = `rgba(0,0,0,${trailAlpha})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw crashing ocean effect
-  lines.forEach(line => {
-    line.update(time / 20);
-    line.draw(ctx);
+  lines.forEach((line, i) => {
+    ctx.beginPath();
+    for (let x = 0; x <= canvas.width; x += 5) {
+      const baseY = canvas.height / 2;
+
+      // Wave motion
+      const wave = Math.sin(x * waveLength + time * 0.05 + line.phase) * waveAmplitude;
+
+      // Crash effect: crest rises and falls
+      const crash = Math.sin(time * crashSpeed + i) * crashAmplitude;
+
+      // DNA twist offset
+      const offsetX = Math.sin(time * 0.02 + i) * 50;
+      const offsetY = Math.cos(time * 0.02 + i) * 20;
+
+      const y = baseY + wave + crash + offsetY;
+      const finalX = x + offsetX;
+
+      if (x === 0) ctx.moveTo(finalX, y);
+      else ctx.lineTo(finalX, y);
+    }
+
+    // Line glow / aura effect
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, line.color + 'ff');
+    gradient.addColorStop(1, line.color + '33');
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 3;
+    ctx.stroke();
   });
 }
 

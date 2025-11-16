@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ocean DNA Waveform</title>
+<title>Formwave Ocean Crash</title>
 <style>
-  body { margin: 0; background: #000; overflow: hidden; }
-  canvas { display: block; }
+  body { margin:0; background:#000; overflow:hidden; }
+  canvas { display:block; }
 </style>
 </head>
 <body>
@@ -22,60 +22,38 @@ function resizeCanvas() {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
-// Lines config
 const lines = [
-  { color: '#ff3f3f', phase: 0 },
-  { color: '#3fffdd', phase: Math.PI / 2 },
-  { color: '#ffd93f', phase: Math.PI }
+  { color: '#ff3f3f', offset: 0 },
+  { color: '#3fffdd', offset: 2 },
+  { color: '#ffd93f', offset: 4 }
 ];
 
-// Wave settings
-const waveAmplitude = 50;
-const waveLength = 0.008; // horizontal frequency
-const crashAmplitude = 60; // height of wave crest
-const crashSpeed = 0.03; // how fast wave crashes
-const trailAlpha = 0.1; // trail opacity
-
-let time = 0;
-
 function animate() {
-  requestAnimationFrame(animate);
-  time += 1;
-
-  // Fade canvas slightly to create trailing effect
-  ctx.fillStyle = `rgba(0,0,0,${trailAlpha})`;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const t = performance.now() * 0.001;
 
   lines.forEach((line, i) => {
     ctx.beginPath();
-    for (let x = 0; x <= canvas.width; x += 5) {
-      const baseY = canvas.height / 2;
+    for(let x=0; x<canvas.width; x+=5){
+      // Perspective: top is far, bottom is near
+      const perspective = (x/canvas.width) * canvas.height * 0.5;
+      const baseY = canvas.height/2 + perspective;
 
-      // Wave motion
-      const wave = Math.sin(x * waveLength + time * 0.05 + line.phase) * waveAmplitude;
+      // Forward crashing wave motion
+      const wave = Math.sin(x*0.02 - t*3 + line.offset) * 30;
+      const crash = Math.sin(t*2 + x*0.01) * 20; // forward crash motion
 
-      // Crash effect: crest rises and falls
-      const crash = Math.sin(time * crashSpeed + i) * crashAmplitude;
+      const y = baseY + wave - crash;
 
-      // DNA twist offset
-      const offsetX = Math.sin(time * 0.02 + i) * 50;
-      const offsetY = Math.cos(time * 0.02 + i) * 20;
-
-      const y = baseY + wave + crash + offsetY;
-      const finalX = x + offsetX;
-
-      if (x === 0) ctx.moveTo(finalX, y);
-      else ctx.lineTo(finalX, y);
+      if(x===0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
-
-    // Line glow / aura effect
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, line.color + 'ff');
-    gradient.addColorStop(1, line.color + '33');
-    ctx.strokeStyle = gradient;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = 2;
     ctx.stroke();
   });
+
+  requestAnimationFrame(animate);
 }
 
 animate();
